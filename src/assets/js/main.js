@@ -30,7 +30,7 @@ window.h5 = {
             alert('Your browser does not support AudioContext!');
             console.log(e);
         }
-        
+
         var audio = document.getElementById('audio');
         audio.play();
         var source = audioCtx.createMediaElementSource(audio);
@@ -53,7 +53,7 @@ window.h5 = {
         var sliceWidth = w * 1.0 / bufferLength;
         var x = 0;
         for (var i = 0; i < dataArray.length; i++) {
-            console.log(dataArray[i])
+            // console.log(dataArray[i])
             var v = dataArray[i] / 128.0;
             var y = v * h / 2;
 
@@ -65,11 +65,32 @@ window.h5 = {
 
             x += sliceWidth;
         }
-        graphics.lineTo(w, h/ 2);
+        graphics.lineTo(w, h / 2);
         graphics.endFill();
         app.stage.addChild(graphics);
 
-        
+        app.ticker.add(() => {
+            
+            analyser.getByteFrequencyData(dataArray);
+            for (var i = 0; i < dataArray.length; i++) {
+                // console.log(dataArray[i])
+                var v = dataArray[i] / 128.0;
+                var y = v * h / 2;
+
+                if (i === 0) {
+                    graphics.clear();
+                    graphics.moveTo(x, y);
+                } else {
+                    graphics.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+            graphics.lineTo(w, h / 2);
+            graphics.endFill();
+
+
+        });
+
 
     },
     isPc: function() {
