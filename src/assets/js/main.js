@@ -70,15 +70,16 @@ window.h5 = {
         app.stage.addChild(graphics);
 
         app.ticker.add(() => {
-            
+
             analyser.getByteFrequencyData(dataArray);
+            console.log(dataArray)
             for (var i = 0; i < dataArray.length; i++) {
                 // console.log(dataArray[i])
                 var v = dataArray[i] / 128.0;
                 var y = v * h / 2;
 
                 if (i === 0) {
-                    graphics.clear();
+                    // graphics.clear();
                     graphics.moveTo(x, y);
                 } else {
                     graphics.lineTo(x, y);
