@@ -7,7 +7,7 @@
 // if (process.env.NODE_ENV !== 'production') {
 //     console.log('Looks like we are in development mode!');
 // }
-
+import * as dat from 'dat.gui';
 // import CSS
 // import animate_css from 'animate.css/animate.min.css';
 import css from '../css/css.css';
@@ -23,7 +23,51 @@ import 'pixi.js';
 
 
 window.h5 = {
+    FizzyText: {
+        drawBar: false,
+        drawWave: true,
+        barColor: 0xFFFFFF,
+        lineColor: 0xFFFFFF,
+        play: function() {
+            var audio = document.getElementById('audio');
+            audio.play();
+        },
+        pause: function() {
+            var audio = document.getElementById('audio');
+            audio.pause();
+        }
+    },
+    initGUI: function() {
+        var that = this;
+        var gui = new dat.GUI();
+        var f1 = gui.addFolder('SineWave');
+
+        function setChecked(prop) {
+            var n = that.FizzyText[prop];
+            console.log(n)
+            if (n) {
+                that.FizzyText['drawBar'] = false;
+                that.FizzyText['drawWave'] = false;
+            }
+            that.FizzyText[prop] = n;
+        }
+        f1.add(that.FizzyText, 'drawWave').listen().onChange(function() {
+            setChecked('drawWave')
+        });
+        f1.addColor(that.FizzyText, 'lineColor');
+
+        var f2 = gui.addFolder('Frequency Bar')
+        f2.add(that.FizzyText, 'drawBar').listen().onChange(function() {
+            setChecked('drawBar')
+        });;
+        f2.addColor(that.FizzyText, 'barColor');
+
+        gui.add(that.FizzyText, 'play');
+        gui.add(that.FizzyText, 'pause');
+
+    },
     initAudioCanvas: function() {
+        var that = this;
         try {
             var audioCtx = new(window.AudioContext || window.webkitAudioContext)();
         } catch (e) {
@@ -46,11 +90,11 @@ window.h5 = {
         var dataArray = new Uint8Array(bufferLength);
 
         //当前频域数据
-        // analyser.getByteFrequencyData()
+        // analyser.getByteFrequencyData(dataArray)
 
         //将当前波形，或者时域数据拷贝
         // analyser.getByteTimeDomainData(dataArray);
-        
+
         //Create a Pixi Application
         var app = new PIXI.Application({ width: 800, height: 600 });
         //Add the canvas that Pixi automatically created for you to the HTML document
@@ -63,16 +107,40 @@ window.h5 = {
 
         app.stage.addChild(graphics);
 
-        function draw() {
+        function drawBar() {
+
+            //get frequency data and put it into the array created above
+            analyser.getByteFrequencyData(dataArray);
+            graphics.clear();
+            graphics.beginFill(that.FizzyText.barColor);
+
+
+            var barWidth = (w / bufferLength) * 10;
+            var barHeight;
+            var x = 0;
+
+            for (var i = 0; i < bufferLength; i++) {
+                barHeight = dataArray[i];
+
+                // graphics.beginFill ( 'rgb(' + (barHeight + 100) + ',50,50)')
+
+                graphics.drawRect(x, h/2 - barHeight / 2, barWidth, barHeight / 2);
+
+                x += barWidth + 1;
+            }
+
+        }
+
+        function drawWave() {
             //get waveform data and put it into the array created above
             analyser.getByteTimeDomainData(dataArray);
             graphics.clear();
             var sliceWidth = w * 1.0 / bufferLength;
             var x = 0;
-            graphics.beginFill(0xFFFFFF);
+            graphics.beginFill();
+            graphics.lineStyle(2, that.FizzyText.waveColor, 1);
             // console.log(dataArray)
             for (var i = 0; i < bufferLength; i++) {
-                // console.log(dataArray[i])
                 var v = dataArray[i] / 128.0;
                 var y = v * h / 2;
 
@@ -91,14 +159,25 @@ window.h5 = {
         var ticker = new PIXI.ticker.Ticker();
         ticker.stop();
         ticker.add((deltaTime) => {
-            draw()
+
+            if (that.FizzyText.drawWave) {
+                drawWave();
+                return;
+            }
+            if (that.FizzyText.drawBar) {
+                drawBar();
+                return;
+            }
         });
         // audio.play();
         audio.addEventListener('play', function() {
             console.log('play');
             ticker.start();
         })
-
+        audio.addEventListener('pause', function() {
+            console.log('pause');
+            // ticker.stop();
+        })
 
     },
     isPc: function() {
@@ -180,6 +259,7 @@ window.h5 = {
     init: function() {
         var that = this;
         that.cssInit().eventInit();
+        that.initGUI()
         that.initAudioCanvas();
     }
 };
