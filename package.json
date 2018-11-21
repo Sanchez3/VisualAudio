@@ -1,5 +1,5 @@
 {
-    "name": "audiowave",
+    "name": "VisualAudio",
     "version": "0.0.1",
     "description": "",
     "license": "MIT",
@@ -30,10 +30,8 @@
         "webpack-merge": "^4.1.1"
     },
     "dependencies": {
-        "@fdaciuk/ajax": "^2.3.0",
-        "animate.css": "^3.5.2",
+        "dat.gui": "^0.7.3",
         "gsap": "^1.20.3",
-        "howler": "^2.0.5",
         "pixi.js": "^4.8.2",
         "stats.js": "^0.17.0"
     },
