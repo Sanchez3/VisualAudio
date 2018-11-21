@@ -27,7 +27,7 @@ window.h5 = {
         drawBar: false,
         drawWave: true,
         barColor: 0xFFFFFF,
-        lineColor: 0xFFFFFF,
+        waveColor: 0xFFFFFF,
         play: function() {
             var audio = document.getElementById('audio');
             audio.play();
@@ -54,7 +54,7 @@ window.h5 = {
         f1.add(that.FizzyText, 'drawWave').listen().onChange(function() {
             setChecked('drawWave')
         });
-        f1.addColor(that.FizzyText, 'lineColor');
+        f1.addColor(that.FizzyText, 'waveColor');
 
         var f2 = gui.addFolder('Frequency Bar')
         f2.add(that.FizzyText, 'drawBar').listen().onChange(function() {
