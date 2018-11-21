@@ -32,48 +32,46 @@ window.h5 = {
         }
 
         var audio = document.getElementById('audio');
-        audio.play();
+
         var source = audioCtx.createMediaElementSource(audio);
         var analyser = audioCtx.createAnalyser();
         analyser.connect(audioCtx.destination);
         source.connect(analyser);
+
+        //确定频域的FFT的大小
+        analyser.fftSize = 2048;
+        //fftSize一半，用于可视化的数据量的数量
         var bufferLength = analyser.frequencyBinCount;
+        //创建无符号字节数组
         var dataArray = new Uint8Array(bufferLength);
 
-        //将当前频域数据拷贝进Uint8Array数组（无符号字节数组）。
-        analyser.getByteFrequencyData(dataArray);
+        //当前频域数据
+        // analyser.getByteFrequencyData()
+
+        //将当前波形，或者时域数据拷贝
+        // analyser.getByteTimeDomainData(dataArray);
+        
         //Create a Pixi Application
         var app = new PIXI.Application({ width: 800, height: 600 });
         //Add the canvas that Pixi automatically created for you to the HTML document
         document.getElementById('canvas-wrapper').appendChild(app.view);
-        var w = 256;
-        var h = 256;
+        var w = 800;
+        var h = 600;
         var graphics = new PIXI.Graphics();
-        graphics.beginFill(0xFFFFFF);
-        var sliceWidth = w * 1.0 / bufferLength;
-        var x = 0;
-        for (var i = 0; i < dataArray.length; i++) {
-            // console.log(dataArray[i])
-            var v = dataArray[i] / 128.0;
-            var y = v * h / 2;
 
-            if (i === 0) {
-                graphics.moveTo(x, y);
-            } else {
-                graphics.lineTo(x, y);
-            }
+        graphics.clear();
 
-            x += sliceWidth;
-        }
-        graphics.lineTo(w, h / 2);
-        graphics.endFill();
         app.stage.addChild(graphics);
 
-        app.ticker.add(() => {
-
-            analyser.getByteFrequencyData(dataArray);
-            console.log(dataArray)
-            for (var i = 0; i < dataArray.length; i++) {
+        function draw() {
+            //get waveform data and put it into the array created above
+            analyser.getByteTimeDomainData(dataArray);
+            graphics.clear();
+            var sliceWidth = w * 1.0 / bufferLength;
+            var x = 0;
+            graphics.beginFill(0xFFFFFF);
+            // console.log(dataArray)
+            for (var i = 0; i < bufferLength; i++) {
                 // console.log(dataArray[i])
                 var v = dataArray[i] / 128.0;
                 var y = v * h / 2;
@@ -88,9 +86,18 @@ window.h5 = {
             }
             graphics.lineTo(w, h / 2);
             graphics.endFill();
+        }
 
-
+        var ticker = new PIXI.ticker.Ticker();
+        ticker.stop();
+        ticker.add((deltaTime) => {
+            draw()
         });
+        // audio.play();
+        audio.addEventListener('play', function() {
+            console.log('play');
+            ticker.start();
+        })
 
 
     },
