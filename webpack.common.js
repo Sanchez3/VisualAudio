@@ -32,35 +32,46 @@ module.exports = {
     },
     module: {
         rules: [{
-            test: /(\.jsx|\.js)$/,
+            test: /\.js$/,
             use: {
                 loader: 'babel-loader',
                 options: {
-                    presets: ["es2015"]
+                    presets: ['@babel/preset-env']
                 }
             },
             exclude: /node_modules/,
             include: '/src/'
         }, {
             test: /(\.css|\.scss|\.sass)$/,
-            use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader', {
-                loader: 'postcss-loader',
-                options: {
-                    plugins: () => [require('autoprefixer')({
-                        'browsers': ['> 1%', 'last 2 versions']
-                    })]
+            use: [{
+                    loader: MiniCssExtractPlugin.loader,
+                    options: {
+                        publicPath: '../../'
+                    }
+                },
+                { loader: 'css-loader' },
+                { loader: 'sass-loader' },
+                {
+                    loader: 'postcss-loader',
+                    options: { plugins: () => [require('autoprefixer')({ 'browsers': ['> 1%', 'last 2 versions'] })] }
                 }
-
-            }]
+            ]
         }, {
             test: /\.(gif|jpg|png|ico)\??.*$/,
             use: {
                 loader: 'url-loader',
                 options: {
-                    limit: 1024,
-                    name: '[name].[ext]',
-                    publicPath: '../../',
-                    outputPath: 'assets/css/'
+                    limit: 10000,
+                    name: 'assets/img/[name].[ext]'
+                }
+            }
+        }, {
+            test: /\.(mp4|webm|ogg|mp3|wav|flac|aac)(\?.*)?$/,
+            use: {
+                loader: 'url-loader',
+                options: {
+                    limit: 10000,
+                    name: 'assets/media/[name].[ext]'
                 }
             }
         }, {
@@ -68,10 +79,8 @@ module.exports = {
             use: {
                 loader: 'url-loader',
                 options: {
-                    limit: 1024,
-                    name: '[name].[ext]',
-                    publicPath: '../../',
-                    outputPath: 'assets/css/'
+                    limit: 10000,
+                    name: 'assets/fonts/[name].[ext]'
                 }
             }
         }, {
@@ -81,7 +90,8 @@ module.exports = {
                 options: {
                     minimize: true,
                     removeComments: false,
-                    collapseWhitespace: false
+                    collapseWhitespace: false,
+                    interpolate: 'require'
                 }
             }
         }]
@@ -94,13 +104,11 @@ module.exports = {
             verbose: true,
             dry: false
         }),
+        // Copy Resource
         new CopyWebpackPlugin([{
-            from: path.resolve(__dirname, "src/assets/img"),
-            to: path.resolve(__dirname, "dist/assets/img")
-
-        }, {
             from: path.resolve(__dirname, "src/assets/media"),
-            to: path.resolve(__dirname, "dist/assets/media")
+            to: path.resolve(__dirname, "dist/assets/media"),
+            ignore: ['.*']
         }]),
         new MiniCssExtractPlugin({
             filename: 'assets/css/[name].[chunkhash].min.css',
@@ -108,6 +116,7 @@ module.exports = {
         }),
         new HtmlWebpackPlugin({
             template: './src/index.html',
+            favicon: './src/assets/img/favicon.ico',
             inject: 'body',
             hash: false,
             minify: {
