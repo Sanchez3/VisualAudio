@@ -13,6 +13,7 @@ import * as dat from 'dat.gui';
 import css from '../css/css.css';
 import scss from '../css/sass.scss';
 
+import { Howl, Howler } from 'howler';
 
 // import Js Plugins/Entities
 
@@ -21,7 +22,9 @@ import 'pixi.js';
 // import Howler from 'howler';
 
 
-
+var sound = new Howl({
+    src: ['./assets/media/bgm1.mp3']
+});
 window.h5 = {
     FizzyText: {
         drawBar: false,
@@ -29,8 +32,9 @@ window.h5 = {
         barColor: 0xFFFFFF,
         waveColor: 0xFFFFFF,
         play: function() {
-            var audio = document.getElementById('audio');
-            audio.play();
+            // var audio = document.getElementById('audio');
+            // audio.play();
+            sound.play()
         },
         pause: function() {
             var audio = document.getElementById('audio');
@@ -74,6 +78,9 @@ window.h5 = {
             alert('Your browser does not support AudioContext!');
             console.log(e);
         }
+
+
+
 
         var audio = document.getElementById('audio');
 
@@ -124,7 +131,7 @@ window.h5 = {
 
                 // graphics.beginFill ( 'rgb(' + (barHeight + 100) + ',50,50)')
 
-                graphics.drawRect(x, h/2 - barHeight / 2, barWidth, barHeight / 2);
+                graphics.drawRect(x, h / 2 - barHeight / 2, barWidth, barHeight / 2);
 
                 x += barWidth + 1;
             }
