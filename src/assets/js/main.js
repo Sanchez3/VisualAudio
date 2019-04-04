@@ -9,22 +9,24 @@
 // }
 import * as dat from 'dat.gui';
 // import CSS
-// import animate_css from 'animate.css/animate.min.css';
+
 import css from '../css/css.css';
-import scss from '../css/sass.scss';
 
-import { Howl, Howler } from 'howler';
-
-// import Js Plugins/Entities
 
 //ES6 Module
 import 'pixi.js';
-// import Howler from 'howler';
+// import * as Tone from 'tone';
 
 
-var sound = new Howl({
-    src: ['./assets/media/bgm1.mp3']
-});
+// var player = new Tone.Player({
+//     "url": "/assets/media/bgm1.mp3",
+//     "loop": true
+// }).toMaster();
+
+// var fft = new Tone.Analyser('fft', 64);
+// player.fan(fft);
+// var fftArray = fft.getValue()
+var audioLoaded = false;
 window.h5 = {
     FizzyText: {
         drawBar: false,
@@ -32,9 +34,14 @@ window.h5 = {
         barColor: 0xFFFFFF,
         waveColor: 0xFFFFFF,
         play: function() {
-            // var audio = document.getElementById('audio');
-            // audio.play();
-            sound.play()
+            var audio = document.getElementById('audio');
+            audio.play();
+
+            //tone.js
+            // player.load('/assets/media/bgm1.mp3',function(){
+            //     player.start();
+            //     audioLoaded=true
+            // })
         },
         pause: function() {
             var audio = document.getElementById('audio');
@@ -48,7 +55,6 @@ window.h5 = {
 
         function setChecked(prop) {
             var n = that.FizzyText[prop];
-            console.log(n)
             if (n) {
                 that.FizzyText['drawBar'] = false;
                 that.FizzyText['drawWave'] = false;
@@ -81,20 +87,30 @@ window.h5 = {
 
 
 
+        var source;
 
-        var audio = document.getElementById('audio');
 
-        var source = audioCtx.createMediaElementSource(audio);
         var analyser = audioCtx.createAnalyser();
-        analyser.connect(audioCtx.destination);
-        source.connect(analyser);
-
+        // analyser.connect(audioCtx.destination);
         //确定频域的FFT的大小
         analyser.fftSize = 2048;
         //fftSize一半，用于可视化的数据量的数量
         var bufferLength = analyser.frequencyBinCount;
         //创建无符号字节数组
         var dataArray = new Uint8Array(bufferLength);
+        var audio = document.getElementById('audio');
+        // source = audioCtx.createMediaElementSource(audio);
+        // source.connect(analyser);
+
+        audio.addEventListener('canplaythrough', function() {
+            audio.removeEventListener('canplaythrough', this);
+            source = audioCtx.createMediaElementSource(audio);
+            source.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            audioLoaded = true;
+        })
+
+
 
         //当前频域数据
         // analyser.getByteFrequencyData(dataArray)
@@ -110,27 +126,36 @@ window.h5 = {
         var h = 600;
         var graphics = new PIXI.Graphics();
 
+        var basicText = new PIXI.Text('Note: Chrome only for now, Mobile bug!!!',{fill:'#FFF'});
+        basicText.x = 10;
+        basicText.y = 10;
+
+        app.stage.addChild(basicText);
+
+
         graphics.clear();
 
         app.stage.addChild(graphics);
 
         function drawBar() {
+            if (!audioLoaded) return;
+            //tone.js
+            // var fftValues = fft.getValue ();
 
             //get frequency data and put it into the array created above
             analyser.getByteFrequencyData(dataArray);
+            // console.log(dataArray)
             graphics.clear();
             graphics.beginFill(that.FizzyText.barColor);
-
 
             var barWidth = (w / bufferLength) * 10;
             var barHeight;
             var x = 0;
 
             for (var i = 0; i < bufferLength; i++) {
+                //tone.js
+                // barHeight = fftValues[i]/255 * h;
                 barHeight = dataArray[i];
-
-                // graphics.beginFill ( 'rgb(' + (barHeight + 100) + ',50,50)')
-
                 graphics.drawRect(x, h / 2 - barHeight / 2, barWidth, barHeight / 2);
 
                 x += barWidth + 1;
@@ -176,6 +201,7 @@ window.h5 = {
                 return;
             }
         });
+        ticker.start();
         // audio.play();
         audio.addEventListener('play', function() {
             console.log('play');
