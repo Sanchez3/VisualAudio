@@ -26,6 +26,84 @@ import 'pixi.js';
 // var fft = new Tone.Analyser('fft', 64);
 // player.fan(fft);
 // var fftArray = fft.getValue()
+
+
+window.AudioContext = (function() {
+    return window.webkitAudioContext || window.AudioContext || window.mozAudioContext;
+})();
+
+// Global Variables for Audio
+var audioContext;
+var audioBuffer;
+var sourceNode;
+var analyserNode;
+var javascriptNode;
+var source;
+var audioData = null;
+var audioPlaying = false;
+var sampleSize = 1024; // number of samples to collect before analyzing data
+var dataArray; // array to hold time-domain/byte-frequency data
+var startedAt;
+var pausedAt;
+var audioUrl = './assets/media/bgm1.mp3';
+
+function setupAudioNodes() {
+    sourceNode = audioContext.createBufferSource();
+    analyserNode = audioContext.createAnalyser();
+    javascriptNode = audioContext.createScriptProcessor(sampleSize, 1, 1);
+    // Create the array for the data values
+    dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+    // Now connect the nodes together
+    sourceNode.connect(audioContext.destination);
+    sourceNode.connect(analyserNode);
+    analyserNode.connect(javascriptNode);
+    javascriptNode.connect(audioContext.destination);
+}
+
+try {
+    audioContext = new AudioContext();
+} catch (e) {
+    alert('Your browser does not support AudioContext!');
+    console.error(e);
+}
+
+function onError(e) {
+    console.log(e);
+}
+
+//Load the audio from the URL via Ajax and store it in global variable audioData
+//Note that the audio load is asynchronous
+function loadSound(url) {
+    var request = new XMLHttpRequest();
+    request.open('GET', url, true);
+    request.responseType = 'arraybuffer';
+    // When loaded, decode the data and play the sound
+    request.onload = function() {
+        audioContext.decodeAudioData(request.response, function(buffer) {
+            audioData = buffer;
+            playSound(audioData);
+        }, onError);
+    }
+    request.send();
+}
+//Play the audio and loop until stopped
+function playSound(buffer) {
+    sourceNode.buffer = buffer;
+
+    if (pausedAt) {
+        startedAt = Date.now() - pausedAt;
+        sourceNode.start(0, pausedAt / 1000);
+    } else {
+        startedAt = Date.now();
+        sourceNode.start(0); // Play the sound now
+    }
+   
+    sourceNode.loop = true;
+    audioPlaying = true;
+}
+
+
+
 var audioLoaded = false;
 window.h5 = {
     FizzyText: {
@@ -34,8 +112,30 @@ window.h5 = {
         barColor: 0xFFFFFF,
         waveColor: 0xFFFFFF,
         play: function() {
-            var audio = document.getElementById('audio');
-            audio.play();
+            if (audioPlaying) return;
+
+            // var audio = document.getElementById('audio');
+            // audio.play();
+            //Set up the audio Analyser, the Source Buffer and javascriptNode
+            setupAudioNodes();
+            //setup the event handler that is triggered every time enough samples have been collected
+            //trigger the audio analysis and draw the results
+            javascriptNode.onaudioprocess = function() {
+
+                //draw the display if the audio is playing
+                if (audioPlaying == true) {
+                    // requestAnimFrame(drawTimeDomain);
+                    // console.log(window.h5.ticker)
+                    window.h5.ticker.start();
+
+                }
+            }
+            //Load the Audio the first time through, otherwise play it from the buffer
+            if (audioData == null) {
+                loadSound(audioUrl);
+            } else {
+                playSound(audioData);
+            }
 
             //tone.js
             // player.load('/assets/media/bgm1.mp3',function(){
@@ -44,8 +144,11 @@ window.h5 = {
             // })
         },
         pause: function() {
-            var audio = document.getElementById('audio');
-            audio.pause();
+            sourceNode.stop(0);
+            audioPlaying = false;
+            pausedAt = Date.now() - startedAt;
+            // var audio = document.getElementById('audio');
+            // audio.pause();
         }
     },
     initGUI: function() {
@@ -78,37 +181,29 @@ window.h5 = {
     },
     initAudioCanvas: function() {
         var that = this;
-        try {
-            var audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-            alert('Your browser does not support AudioContext!');
-            console.log(e);
-        }
 
 
 
-        var source;
 
-
-        var analyser = audioCtx.createAnalyser();
-        // analyser.connect(audioCtx.destination);
-        //确定频域的FFT的大小
-        analyser.fftSize = 2048;
-        //fftSize一半，用于可视化的数据量的数量
-        var bufferLength = analyser.frequencyBinCount;
-        //创建无符号字节数组
-        var dataArray = new Uint8Array(bufferLength);
-        var audio = document.getElementById('audio');
+        // var analyser = audioCtx.createAnalyser();
+        // // analyser.connect(audioCtx.destination);
+        // //确定频域的FFT的大小
+        // analyser.fftSize = 2048;
+        // //fftSize一半，用于可视化的数据量的数量
+        // var bufferLength = analyser.frequencyBinCount;
+        // //创建无符号字节数组
+        // var dataArray = new Uint8Array(bufferLength);
+        // var audio = document.getElementById('audio');
         // source = audioCtx.createMediaElementSource(audio);
         // source.connect(analyser);
 
-        audio.addEventListener('canplaythrough', function() {
-            audio.removeEventListener('canplaythrough', this);
-            source = audioCtx.createMediaElementSource(audio);
-            source.connect(analyser);
-            analyser.connect(audioCtx.destination);
-            audioLoaded = true;
-        })
+        // audio.addEventListener('canplaythrough', function() {
+        //     audio.removeEventListener('canplaythrough', this);
+        //     source = audioCtx.createMediaElementSource(audio);
+        //     source.connect(analyser);
+        //     analyser.connect(audioCtx.destination);
+        //     audioLoaded = true;
+        // })
 
 
 
@@ -126,7 +221,7 @@ window.h5 = {
         var h = 600;
         var graphics = new PIXI.Graphics();
 
-        var basicText = new PIXI.Text('Note: Chrome only for now, Mobile bug!!!',{fill:'#FFF'});
+        var basicText = new PIXI.Text('Note: Mobile for now too!!!', { fill: '#FFF' });
         basicText.x = 10;
         basicText.y = 10;
 
@@ -138,18 +233,20 @@ window.h5 = {
         app.stage.addChild(graphics);
 
         function drawBar() {
-            if (!audioLoaded) return;
+
             //tone.js
             // var fftValues = fft.getValue ();
-
             //get frequency data and put it into the array created above
-            analyser.getByteFrequencyData(dataArray);
+            //当前频域数据
+            analyserNode.getByteFrequencyData(dataArray);
             // console.log(dataArray)
+            var bufferLength = analyserNode.frequencyBinCount;
+
             graphics.clear();
             graphics.beginFill(that.FizzyText.barColor);
 
             var barWidth = (w / bufferLength) * 10;
-            var barHeight;
+            var barHeight = 0;
             var x = 0;
 
             for (var i = 0; i < bufferLength; i++) {
@@ -164,8 +261,12 @@ window.h5 = {
         }
 
         function drawWave() {
+
             //get waveform data and put it into the array created above
-            analyser.getByteTimeDomainData(dataArray);
+            //将当前波形，或者时域数据拷贝
+            analyserNode.getByteTimeDomainData(dataArray);
+
+            var bufferLength = analyserNode.frequencyBinCount;
             graphics.clear();
             var sliceWidth = w * 1.0 / bufferLength;
             var x = 0;
@@ -188,9 +289,9 @@ window.h5 = {
             graphics.endFill();
         }
 
-        var ticker = new PIXI.ticker.Ticker();
-        ticker.stop();
-        ticker.add((deltaTime) => {
+        that.ticker = new PIXI.ticker.Ticker();
+        that.ticker.stop();
+        that.ticker.add((deltaTime) => {
 
             if (that.FizzyText.drawWave) {
                 drawWave();
@@ -201,16 +302,16 @@ window.h5 = {
                 return;
             }
         });
-        ticker.start();
+        // ticker.start();
         // audio.play();
-        audio.addEventListener('play', function() {
-            console.log('play');
-            ticker.start();
-        })
-        audio.addEventListener('pause', function() {
-            console.log('pause');
-            // ticker.stop();
-        })
+        // audio.addEventListener('play', function() {
+        //     console.log('play');
+        //     ticker.start();
+        // })
+        // audio.addEventListener('pause', function() {
+        //     console.log('pause');
+        //     // ticker.stop();
+        // })
 
     },
     isPc: function() {
