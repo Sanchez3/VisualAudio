@@ -15,7 +15,7 @@ import css from '../css/css.css';
 
 //ES6 Module
 import 'pixi.js';
-// import * as Tone from 'tone';
+import BufferLoader from './entities/BufferLoader.js';
 
 
 // var player = new Tone.Player({
@@ -73,18 +73,25 @@ function onError(e) {
 
 //Load the audio from the URL via Ajax and store it in global variable audioData
 //Note that the audio load is asynchronous
-function loadSound(url) {
-    var request = new XMLHttpRequest();
-    request.open('GET', url, true);
-    request.responseType = 'arraybuffer';
-    // When loaded, decode the data and play the sound
-    request.onload = function() {
-        audioContext.decodeAudioData(request.response, function(buffer) {
-            audioData = buffer;
-            playSound(audioData);
-        }, onError);
-    }
-    request.send();
+var bufferLoader;
+function loadSound(urlList) {
+    bufferLoader = new BufferLoader(audioContext, urlList, function(bufferlist) {
+        audioData = bufferlist[0];
+        playSound(audioData);
+    })
+    bufferLoader.load();
+
+    // var request = new XMLHttpRequest();
+    // request.open('GET', url, true);
+    // request.responseType = 'arraybuffer';
+    // // When loaded, decode the data and play the sound
+    // request.onload = function() {
+    //     audioContext.decodeAudioData(request.response, function(buffer) {
+    //         audioData = buffer;
+    //         playSound(audioData);
+    //     }, onError);
+    // }
+    // request.send();
 }
 //Play the audio and loop until stopped
 function playSound(buffer) {
@@ -97,7 +104,7 @@ function playSound(buffer) {
         startedAt = Date.now();
         sourceNode.start(0); // Play the sound now
     }
-   
+
     sourceNode.loop = true;
     audioPlaying = true;
 }
@@ -132,7 +139,7 @@ window.h5 = {
             }
             //Load the Audio the first time through, otherwise play it from the buffer
             if (audioData == null) {
-                loadSound(audioUrl);
+                loadSound([audioUrl]);
             } else {
                 playSound(audioData);
             }
